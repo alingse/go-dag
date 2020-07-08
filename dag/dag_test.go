@@ -22,7 +22,7 @@ func TestDAG(t *testing.T) {
 	nodesList := dag.TopSort()
 	assert.Len(t, nodesList, 4)
 	assert.Equal(t, []Node{0}, nodesList[0])
-	assert.EqualValues(t, []Node{1, 3}, nodesList[1])
-	assert.EqualValues(t, []Node{2}, nodesList[2])
-	assert.EqualValues(t, []Node{4}, nodesList[3])
+	assert.ElementsMatch(t, []Node{1, 3}, nodesList[1])
+	assert.Equal(t, []Node{2}, nodesList[2])
+	assert.Equal(t, []Node{4}, nodesList[3])
 }
