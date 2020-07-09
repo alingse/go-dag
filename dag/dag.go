@@ -59,5 +59,14 @@ func topSort(requires map[Node][]Node) ([][]Node, error) {
 }
 
 func (d *DAG) TopSort() [][]Node {
-	return d.topSort
+	var topSort = make([][]Node, len(d.topSort))
+	for i := range d.topSort {
+		topSort[i] = make([]Node, len(d.topSort[i]))
+		copy(topSort[i], d.topSort[i])
+	}
+	return topSort
+}
+
+func (d *DAG) Resolve(problem []Node) [][]Node {
+	return nil
 }
