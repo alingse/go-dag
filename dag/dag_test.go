@@ -25,4 +25,17 @@ func TestDAG(t *testing.T) {
 	assert.ElementsMatch(t, []Node{1, 3}, nodesList[1])
 	assert.Equal(t, []Node{2}, nodesList[2])
 	assert.Equal(t, []Node{4}, nodesList[3])
+
+	problem := []Node{3}
+	nodesList2 := dag.Solve((problem))
+	assert.Len(t, nodesList2, 2)
+	assert.Equal(t, []Node{0}, nodesList2[0])
+	assert.Equal(t, []Node{3}, nodesList2[1])
+
+	problem2 := []Node{2}
+	nodesList3 := dag.Solve((problem2))
+	assert.Len(t, nodesList3, 3)
+	assert.Equal(t, []Node{0}, nodesList3[0])
+	assert.Equal(t, []Node{1}, nodesList3[1])
+	assert.Equal(t, []Node{2}, nodesList3[2])
 }

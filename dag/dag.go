@@ -67,6 +67,32 @@ func (d *DAG) TopSort() [][]Node {
 	return topSort
 }
 
-func (d *DAG) Resolve(problem []Node) [][]Node {
-	return nil
+func (d *DAG) Solve(problem []Node) [][]Node {
+	need := make(map[Node]bool)
+	for len(problem) > 0 {
+		var next []Node
+		for _, node := range problem {
+			need[node] = true
+			for _, r := range d.requires[node] {
+				if !need[r] {
+					next = append(next, r)
+				}
+			}
+		}
+		problem = next
+	}
+
+	var solve [][]Node
+	for _, nodes := range d.topSort {
+		var rs []Node
+		for _, node := range nodes {
+			if need[node] {
+				rs = append(rs, node)
+			}
+		}
+		if len(rs) > 0 {
+			solve = append(solve, rs)
+		}
+	}
+	return solve
 }
