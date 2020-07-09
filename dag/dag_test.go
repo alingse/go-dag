@@ -19,7 +19,7 @@ func TestDAG(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, dag)
 
-	nodesList := dag.TopSort()
+	nodesList := dag.TopoSort()
 	assert.Len(t, nodesList, 4)
 	assert.Equal(t, []Node{0}, nodesList[0])
 	assert.ElementsMatch(t, []Node{1, 3}, nodesList[1])

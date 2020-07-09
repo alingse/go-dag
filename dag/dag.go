@@ -8,20 +8,20 @@ type Node int
 
 type DAG struct {
 	requires map[Node][]Node
-	topSort  [][]Node
+	topoSort [][]Node
 }
 
 func NewDAG(requires map[Node][]Node) (*DAG, error) {
-	ts, err := topSort(requires)
+	ts, err := topoSort(requires)
 	if err != nil {
 		return nil, err
 	}
-	return &DAG{requires: requires, topSort: ts}, nil
+	return &DAG{requires: requires, topoSort: ts}, nil
 }
 
 var InvalidDAG = errors.New("invalid DAG")
 
-func topSort(requires map[Node][]Node) ([][]Node, error) {
+func topoSort(requires map[Node][]Node) ([][]Node, error) {
 	if len(requires) == 0 {
 		return nil, nil
 	}
@@ -58,13 +58,14 @@ func topSort(requires map[Node][]Node) ([][]Node, error) {
 	return stageNodes, nil
 }
 
-func (d *DAG) TopSort() [][]Node {
-	var topSort = make([][]Node, len(d.topSort))
-	for i := range d.topSort {
-		topSort[i] = make([]Node, len(d.topSort[i]))
-		copy(topSort[i], d.topSort[i])
+func (d *DAG) TopoSort() [][]Node {
+	// return a copy of d.topoSort
+	var ts = make([][]Node, len(d.topoSort))
+	for i := range d.topoSort {
+		ts[i] = make([]Node, len(d.topoSort[i]))
+		copy(ts[i], d.topoSort[i])
 	}
-	return topSort
+	return ts
 }
 
 func (d *DAG) Solve(problem []Node) [][]Node {
@@ -83,7 +84,7 @@ func (d *DAG) Solve(problem []Node) [][]Node {
 	}
 
 	var solve [][]Node
-	for _, nodes := range d.topSort {
+	for _, nodes := range d.topoSort {
 		var rs []Node
 		for _, node := range nodes {
 			if need[node] {
