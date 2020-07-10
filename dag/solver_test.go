@@ -77,8 +77,10 @@ func TestSolver(t *testing.T) {
 	assert.NotNil(t, dag)
 
 	problem := []Node{FieldProfile}
-	solver := NewSolver(dag, mr.ResolveTable())
-	solver.Solve(problem)
+	solver, err := NewSolver(dag, mr.ResolveTable())
+	assert.Nil(t, err)
+	assert.NotNil(t, solver)
 
+	solver.Solve(problem)
 	assert.Equal(t, "User:1, with FullName: hello:1 world:1", model.Profile)
 }

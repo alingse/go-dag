@@ -39,3 +39,27 @@ func TestDAG(t *testing.T) {
 	assert.Equal(t, []Node{1}, nodesList3[1])
 	assert.Equal(t, []Node{2}, nodesList3[2])
 }
+
+func TestDAGWithInvalid(t *testing.T) {
+	requires := map[Node][]Node{
+		0: nil,
+		1: {0, 2},
+		2: {0, 1},
+		3: {0},
+		4: {2, 3},
+	}
+	_, err := NewDAG(requires)
+	assert.NotNil(t, err)
+}
+
+func TestDAGWithInvalid2(t *testing.T) {
+	requires := map[Node][]Node{
+		0: nil,
+		1: {0},
+		2: {0, 1, 5},
+		3: {0},
+		4: {2, 3},
+	}
+	_, err := NewDAG(requires)
+	assert.NotNil(t, err)
+}

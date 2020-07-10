@@ -1,6 +1,9 @@
 package dag
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 type SolveFunc func() error
 type SolveFuncTable map[Node]SolveFunc
@@ -10,8 +13,16 @@ type Solver struct {
 	table SolveFuncTable
 }
 
-func NewSolver(dag *DAG, table SolveFuncTable) *Solver {
-	return &Solver{dag: dag, table: table}
+var InvalidSolver = errors.New("invalid Solver")
+
+func NewSolver(dag *DAG, table SolveFuncTable) (*Solver, error) {
+	for node := range dag.requires {
+		if table[node] == nil {
+			return nil, InvalidSolver
+		}
+	}
+	solver := &Solver{dag: dag, table: table}
+	return solver, nil
 }
 
 func (s *Solver) Solve(problem []Node) []error {
