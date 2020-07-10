@@ -7,37 +7,55 @@ import (
 type Node int
 
 type DAG struct {
+	nodes    []Node
 	requires map[Node][]Node
 	topoSort [][]Node
 }
+
+var InvalidDAG = errors.New("invalid DAG")
 
 func NewDAG(requires map[Node][]Node) (*DAG, error) {
 	ts, err := topoSort(requires)
 	if err != nil {
 		return nil, err
 	}
-	return &DAG{requires: requires, topoSort: ts}, nil
+	nodes := make([]Node, 0, len(requires))
+	for node := range requires {
+		nodes = append(nodes, node)
+	}
+	dag := &DAG{
+		nodes:    nodes,
+		requires: requires,
+		topoSort: ts,
+	}
+	return dag, nil
 }
-
-var InvalidDAG = errors.New("invalid DAG")
 
 func topoSort(requires map[Node][]Node) ([][]Node, error) {
 	if len(requires) == 0 {
 		return nil, nil
 	}
-	var stageNodes [][]Node
-	stageMap := make(map[Node]int, len(requires))
-	for stage := 0; len(stageMap) < len(requires); stage++ {
+	// check all nodes has required
+	for _, rs := range requires {
+		for _, r := range rs {
+			if _, ok := requires[r]; !ok {
+				return nil, InvalidDAG
+			}
+		}
+	}
+
+	var nodesList [][]Node
+	nodeMap := make(map[Node]int, len(requires))
+	for stage := 0; len(nodeMap) < len(requires); stage++ {
 		var nodes []Node
 		for node, require := range requires {
-			// checked
-			if _, ok := stageMap[node]; ok {
+			if _, ok := nodeMap[node]; ok {
 				continue
 			}
 			// fitler
 			var rs []Node
 			for _, r := range require {
-				if _, ok := stageMap[r]; !ok {
+				if _, ok := nodeMap[r]; !ok {
 					rs = append(rs, r)
 				}
 			}
@@ -49,13 +67,13 @@ func topoSort(requires map[Node][]Node) ([][]Node, error) {
 		if len(nodes) == 0 {
 			return nil, InvalidDAG
 		}
-		// this stage
+
 		for _, node := range nodes {
-			stageMap[node] = stage
+			nodeMap[node] = stage
 		}
-		stageNodes = append(stageNodes, nodes)
+		nodesList = append(nodesList, nodes)
 	}
-	return stageNodes, nil
+	return nodesList, nil
 }
 
 func (d *DAG) TopoSort() [][]Node {
@@ -96,4 +114,8 @@ func (d *DAG) Solve(problem []Node) [][]Node {
 		}
 	}
 	return solve
+}
+
+func (d *DAG) Nodes() []Node {
+	return d.nodes
 }
