@@ -5,16 +5,17 @@ import (
 )
 
 type Node int
+type DAGRequires map[Node][]Node
 
 type DAG struct {
 	nodes    []Node
-	requires map[Node][]Node
+	requires DAGRequires
 	topoSort [][]Node
 }
 
 var InvalidDAG = errors.New("invalid DAG")
 
-func NewDAG(requires map[Node][]Node) (*DAG, error) {
+func NewDAG(requires DAGRequires) (*DAG, error) {
 	ts, err := topoSort(requires)
 	if err != nil {
 		return nil, err
@@ -31,7 +32,7 @@ func NewDAG(requires map[Node][]Node) (*DAG, error) {
 	return dag, nil
 }
 
-func topoSort(requires map[Node][]Node) ([][]Node, error) {
+func topoSort(requires DAGRequires) ([][]Node, error) {
 	// check all nodes has required
 	for _, rs := range requires {
 		for _, r := range rs {

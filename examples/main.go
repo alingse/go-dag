@@ -56,7 +56,7 @@ func (m *ModelResolver) Table() dag.SolveFuncTable {
 	}
 }
 
-func (m *ModelResolver) Requires() map[dag.Node][]dag.Node {
+func (m *ModelResolver) Requires() dag.DAGRequires {
 	return map[dag.Node][]dag.Node{
 		FieldId:        nil,
 		FieldFirstName: {FieldId},
