@@ -20,8 +20,8 @@ func NewDAG(requires map[Node][]Node) (*DAG, error) {
 		return nil, err
 	}
 	nodes := make([]Node, 0, len(requires))
-	for node := range requires {
-		nodes = append(nodes, node)
+	for i := range ts {
+		nodes = append(nodes, ts[i]...)
 	}
 	dag := &DAG{
 		nodes:    nodes,
@@ -32,9 +32,6 @@ func NewDAG(requires map[Node][]Node) (*DAG, error) {
 }
 
 func topoSort(requires map[Node][]Node) ([][]Node, error) {
-	if len(requires) == 0 {
-		return nil, nil
-	}
 	// check all nodes has required
 	for _, rs := range requires {
 		for _, r := range rs {
