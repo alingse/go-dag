@@ -144,6 +144,6 @@ solver 将自动 Solve
 
 ### Solve
 
-目前 Solver.Solve 函数的 errMap 存在并发问题 ( 还没想好 🤔)
+目前 Solver.Solve 函数是尽力执行完所有可能执行的。
 
-大体思路是 err 通过依赖路径一路 pop, 最终返回 problem 对应的 err
+也许可以提供碰见任意 err 就停止的 Solve (failfast?), 不过这种情况 err 通过依赖路径一路 pop, 最终返回 problem 对应的 err 优点的难度

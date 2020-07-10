@@ -26,33 +26,43 @@ func NewSolver(dag *DAG, table SolveFuncTable) (*Solver, error) {
 }
 
 func (s *Solver) Solve(problem []Node) []error {
-	// TODO: fix 'fatal error: concurrent map writes'
 	errMap := make(map[Node]error, len(problem))
 	solution := s.dag.Solve(problem)
 	for _, nodes := range solution {
 		var wg sync.WaitGroup
-		for _, node := range nodes {
+		var errors = make([]error, len(nodes))
+		for i, node := range nodes {
+			i := i
 			node := node
 			f := s.table[node]
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				// require failed
+				var err error
+				// check if require failed
 				for _, r := range s.dag.requires[node] {
 					if errMap[r] != nil {
-						errMap[node] = errMap[r]
-						return
+						err = errMap[r]
+						break
 					}
 				}
-				errMap[node] = f()
+
+				if err == nil {
+					err = f()
+				}
+				errors[i] = err
 			}()
 		}
 		wg.Wait()
+		// collect
+		for i, err := range errors {
+			errMap[nodes[i]] = err
+		}
 	}
 
-	var errs []error
-	for _, node := range problem {
-		errs = append(errs, errMap[node])
+	var errors = make([]error, len(problem))
+	for i, node := range problem {
+		errors[i] = errMap[node]
 	}
-	return errs
+	return errors
 }
