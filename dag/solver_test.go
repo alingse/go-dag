@@ -49,8 +49,8 @@ func (m *ModelResolver) GetProfile() error {
 	return nil
 }
 
-func (m *ModelResolver) ResolveTable() CallTable {
-	return map[Node]Call{
+func (m *ModelResolver) ResolveTable() SolveFuncTable {
+	return map[Node]SolveFunc{
 		FieldId:        func() error { return nil },
 		FieldFirstName: m.GetFirstName,
 		FieldLastName:  m.GetLastName,

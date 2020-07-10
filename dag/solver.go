@@ -2,15 +2,15 @@ package dag
 
 import "sync"
 
-type Call func() error
-type CallTable map[Node]Call
+type SolveFunc func() error
+type SolveFuncTable map[Node]SolveFunc
 
 type Solver struct {
 	dag   *DAG
-	table CallTable
+	table SolveFuncTable
 }
 
-func NewSolver(dag *DAG, table CallTable) *Solver {
+func NewSolver(dag *DAG, table SolveFuncTable) *Solver {
 	return &Solver{dag: dag, table: table}
 }
 
@@ -25,6 +25,13 @@ func (s *Solver) Solve(problem []Node) []error {
 			f := s.table[node]
 			go func() {
 				defer wg.Done()
+				// require failed
+				for _, r := range s.dag.requires[node] {
+					if errMap[r] != nil {
+						errMap[node] = errMap[r]
+						return
+					}
+				}
 				errMap[node] = f()
 			}()
 		}
