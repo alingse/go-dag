@@ -29,3 +29,6 @@ jobs:
       run: |
         go test -coverprofile=coverage.out ./...
         go tool cover -func=coverage.out
+
+    - name: Example
+      run: go run examples/main.go
