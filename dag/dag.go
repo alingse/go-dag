@@ -86,6 +86,13 @@ func (d *DAG) TopoSort() [][]Node {
 	return ts
 }
 
+func (d *DAG) Nodes() []Node {
+	// return a copy
+	nodes := make([]Node, len(d.nodes))
+	copy(nodes, d.nodes)
+	return nodes
+}
+
 func (d *DAG) Solve(problem []Node) [][]Node {
 	need := make(map[Node]bool)
 	for len(problem) > 0 {
@@ -114,8 +121,4 @@ func (d *DAG) Solve(problem []Node) [][]Node {
 		}
 	}
 	return solve
-}
-
-func (d *DAG) Nodes() []Node {
-	return d.nodes
 }
