@@ -1,42 +1,3 @@
-# go-dag
-try implement DAG resolver and topological sort
-
-## DAG
-
-根据依赖关系构建拓扑排序
-
-```
-0 --> nil
-1 --> 0
-2 --> 0, 1
-3 --> 0
-4 --> 2, 3
-```
-
-得到的拓扑排序就是
-[0] [1, 3] [2] [4]
-
-### Solve
-
-将传入的 []Node 作为问题 Solve 一种解决方案
-
-```
-[3] --> [0] [3]
-[2] --> [0] [1] [2]
-[1, 3] --> [0] [1, 3]
-[2, 3] --> [0] [1, 3] [2]
-[2, 4] --> [0] [1, 3] [2] [4]
-```
-
-solve 数组决定依赖解决顺序, solve 第 i 项可并发处理
-
-## Solver
-
-根据构建好的 DAG 和 SolveFuncTable 去执行 problem 的求解过程
-
-如 examples 给出的例子
-
-```go
 package main
 
 import (
@@ -132,18 +93,3 @@ func main() {
 	// got the profile: 'User:1, with FullName: hello:1 world:1'
 	fmt.Println(model.Profile)
 }
-```
-
-依次声明 `Model` 和 `Field` 以及各个字段的具体 `ResolveXXX` 实现
-
-ModelResolver 给出 `Requires()` 和 `Table()`
-
-给出具体要处理的 problem --> `[]{FieldProfile}`
-
-solver 将自动 Solve
-
-### Solve
-
-目前 Solver.Solve 函数的 errMap 存在并发问题 ( 还没想好 🤔)
-
-大体思路是 err 通过依赖路径一路 pop, 最终返回 problem 对应的 err
