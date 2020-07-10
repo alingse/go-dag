@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	FieldId Node = iota +1
+	FieldId Node = iota + 1
 	FieldFirstName
 	FieldLastName
 	FieldFullName
@@ -16,11 +16,11 @@ const (
 )
 
 type Model struct {
-	Id int64
+	Id        int64
 	FirstName string
-	LastName string
-	FullName string
-	Profile string
+	LastName  string
+	FullName  string
+	Profile   string
 }
 
 type ModelResolver struct {
@@ -38,48 +38,46 @@ func (m *ModelResolver) GetLastName() error {
 }
 
 func (m *ModelResolver) GetFullName() error {
-	m.model.FullName = fmt.Sprintf("%s %s", 
+	m.model.FullName = fmt.Sprintf("%s %s",
 		m.model.FirstName, m.model.LastName)
 	return nil
 }
 
 func (m *ModelResolver) GetProfile() error {
-	m.model.Profile = fmt.Sprintf("User:%d, with FullName: %s", 
+	m.model.Profile = fmt.Sprintf("User:%d, with FullName: %s",
 		m.model.Id, m.model.FullName)
 	return nil
 }
 
-func (m *ModelResolver) ResolveFactory(node Node) Call {
-	r := map[Node]Call{
-		FieldId: func () error {return nil},
+func (m *ModelResolver) ResolveTable() CallTable {
+	return map[Node]Call{
+		FieldId:        func() error { return nil },
 		FieldFirstName: m.GetFirstName,
-		FieldLastName: m.GetLastName,
-		FieldFullName: m.GetFullName,
-		FieldProfile: m.GetProfile,
+		FieldLastName:  m.GetLastName,
+		FieldFullName:  m.GetFullName,
+		FieldProfile:   m.GetProfile,
 	}
-	return r[node]
 }
 
-func (m *ModelResolver) Deps() map[Node][]Node{
+func (m *ModelResolver) ResolveDeps() map[Node][]Node {
 	return map[Node][]Node{
-		FieldId: nil,
+		FieldId:        nil,
 		FieldFirstName: {FieldId},
-		FieldLastName: {FieldId},
-		FieldFullName: {FieldFirstName, FieldLastName},
-		FieldProfile: {FieldId, FieldFullName},
+		FieldLastName:  {FieldId},
+		FieldFullName:  {FieldFirstName, FieldLastName},
+		FieldProfile:   {FieldId, FieldFullName},
 	}
 }
-
 
 func TestSolver(t *testing.T) {
 	model := &Model{Id: 1}
 	mr := &ModelResolver{model: model}
-	dag, err := NewDAG(mr.Deps())
+	dag, err := NewDAG(mr.ResolveDeps())
 	assert.Nil(t, err)
 	assert.NotNil(t, dag)
 
 	problem := []Node{FieldProfile}
-	solver := NewSolver(dag, mr.ResolveFactory)
+	solver := NewSolver(dag, mr.ResolveTable())
 	solver.Solve(problem)
 
 	assert.Equal(t, "User:1, with FullName: hello:1 world:1", model.Profile)

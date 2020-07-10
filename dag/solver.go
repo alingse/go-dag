@@ -3,15 +3,15 @@ package dag
 import "sync"
 
 type Call func() error
-type CallFactory func(Node) Call
+type CallTable map[Node]Call
 
 type Solver struct {
-	dag     *DAG
-	factory CallFactory
+	dag   *DAG
+	table CallTable
 }
 
-func NewSolver(dag *DAG, factory CallFactory) *Solver {
-	return &Solver{dag: dag, factory: factory}
+func NewSolver(dag *DAG, table CallTable) *Solver {
+	return &Solver{dag: dag, table: table}
 }
 
 func (s *Solver) Solve(problem []Node) []error {
@@ -22,7 +22,7 @@ func (s *Solver) Solve(problem []Node) []error {
 		for _, node := range nodes {
 			wg.Add(1)
 			node := node
-			f := s.factory(node)
+			f := s.table[node]
 			go func() {
 				defer wg.Done()
 				errMap[node] = f()
