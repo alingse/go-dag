@@ -26,8 +26,8 @@ func NewSolver(dag *DAG, table SolveFuncTable) (*Solver, error) {
 }
 
 func (s *Solver) Solve(problem []Node) []error {
-	errMap := make(map[Node]error, len(problem))
 	solution := s.dag.Solve(problem)
+	errMap := make(map[Node]error, len(problem))
 	for _, nodes := range solution {
 		var wg sync.WaitGroup
 		var errors = make([]error, len(nodes))
@@ -47,10 +47,11 @@ func (s *Solver) Solve(problem []Node) []error {
 					}
 				}
 
-				if err == nil {
-					err = f()
+				if err != nil {
+					errors[i] = err
+					return
 				}
-				errors[i] = err
+				errors[i] = f()
 			}()
 		}
 		wg.Wait()

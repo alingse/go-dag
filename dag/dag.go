@@ -16,14 +16,25 @@ type DAG struct {
 var InvalidDAG = errors.New("invalid DAG")
 
 func NewDAG(requires DAGRequires) (*DAG, error) {
+	// copy
+	requires2 := make(DAGRequires, len(requires))
+	for node, rs := range requires {
+		nodes := make([]Node, len(rs))
+		copy(nodes, rs)
+		requires2[node] = nodes
+	}
+	requires = requires2
+
 	ts, err := topoSort(requires)
 	if err != nil {
 		return nil, err
 	}
+
 	nodes := make([]Node, 0, len(requires))
 	for i := range ts {
 		nodes = append(nodes, ts[i]...)
 	}
+
 	dag := &DAG{
 		nodes:    nodes,
 		requires: requires,
@@ -85,7 +96,7 @@ func (d *DAG) TopoSort() [][]Node {
 }
 
 func (d *DAG) Nodes() []Node {
-	// return a copy
+	// return a copy of d.nodes
 	nodes := make([]Node, len(d.nodes))
 	copy(nodes, d.nodes)
 	return nodes
@@ -106,7 +117,7 @@ func (d *DAG) Solve(problem []Node) [][]Node {
 		problem = next
 	}
 
-	var solve [][]Node
+	var soloution [][]Node
 	for _, nodes := range d.topoSort {
 		var rs []Node
 		for _, node := range nodes {
@@ -115,8 +126,8 @@ func (d *DAG) Solve(problem []Node) [][]Node {
 			}
 		}
 		if len(rs) > 0 {
-			solve = append(solve, rs)
+			soloution = append(soloution, rs)
 		}
 	}
-	return solve
+	return soloution
 }
