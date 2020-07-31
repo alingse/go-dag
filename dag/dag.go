@@ -4,8 +4,10 @@ import (
 	"errors"
 )
 
-type Node int
-type DAGRequires map[Node][]Node
+type (
+	Node        int
+	DAGRequires map[Node][]Node
+)
 
 type DAG struct {
 	nodes    []Node
@@ -87,7 +89,7 @@ func topoSort(requires DAGRequires) ([][]Node, error) {
 
 func (d *DAG) TopoSort() [][]Node {
 	// return a copy of d.topoSort
-	var ts = make([][]Node, len(d.topoSort))
+	ts := make([][]Node, len(d.topoSort))
 	for i := range d.topoSort {
 		ts[i] = make([]Node, len(d.topoSort[i]))
 		copy(ts[i], d.topoSort[i])

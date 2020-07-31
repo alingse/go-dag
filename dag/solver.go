@@ -5,8 +5,10 @@ import (
 	"sync"
 )
 
-type SolveFunc func() error
-type SolveFuncTable map[Node]SolveFunc
+type (
+	SolveFunc      func() error
+	SolveFuncTable map[Node]SolveFunc
+)
 
 type Solver struct {
 	dag   *DAG
@@ -30,7 +32,7 @@ func (s *Solver) Solve(problem []Node) []error {
 	errMap := make(map[Node]error, len(problem))
 	for _, nodes := range solution {
 		var wg sync.WaitGroup
-		var errors = make([]error, len(nodes))
+		errors := make([]error, len(nodes))
 		for i, node := range nodes {
 			i := i
 			node := node
@@ -61,7 +63,7 @@ func (s *Solver) Solve(problem []Node) []error {
 		}
 	}
 
-	var errors = make([]error, len(problem))
+	errors := make([]error, len(problem))
 	for i, node := range problem {
 		errors[i] = errMap[node]
 	}
