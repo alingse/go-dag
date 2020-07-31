@@ -6,24 +6,25 @@ import (
 )
 
 type (
-	SolveFunc      func() error
-	SolveFuncTable map[Node]SolveFunc
+	SolveFunc func() error
 )
 
+type Solvable interface {
+	GetSolveFunc(n Node) SolveFunc
+}
+
 type Solver struct {
-	dag   *DAG
-	table SolveFuncTable
+	dag      *DAG
+	solvable Solvable
 }
 
 var InvalidSolver = errors.New("invalid Solver")
 
-func NewSolver(dag *DAG, table SolveFuncTable) (*Solver, error) {
-	for node := range dag.requires {
-		if table[node] == nil {
-			return nil, InvalidSolver
-		}
+func NewSolver(dag *DAG, solvable Solvable) (*Solver, error) {
+	solver := &Solver{
+		dag:      dag,
+		solvable: solvable,
 	}
-	solver := &Solver{dag: dag, table: table}
 	return solver, nil
 }
 
@@ -36,7 +37,7 @@ func (s *Solver) Solve(problem []Node) []error {
 		for i, node := range nodes {
 			i := i
 			node := node
-			f := s.table[node]
+			f := s.solvable.GetSolveFunc(node)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()

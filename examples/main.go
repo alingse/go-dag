@@ -46,7 +46,7 @@ func (m *ModelResolver) ResolveProfile() error {
 	return nil
 }
 
-func (m *ModelResolver) Table() dag.SolveFuncTable {
+func (m *ModelResolver) Table() map[dag.Node]dag.SolveFunc {
 	return map[dag.Node]dag.SolveFunc{
 		FieldId:        func() error { return nil },
 		FieldFirstName: m.ResolveFirstName,
@@ -66,6 +66,11 @@ func (m *ModelResolver) Requires() dag.DAGRequires {
 	}
 }
 
+func (m *ModelResolver) GetSolveFunc(node dag.Node) dag.SolveFunc {
+	table := m.Table()
+	return table[node]
+}
+
 func main() {
 	// load DAG
 	var mr *ModelResolver
@@ -80,7 +85,7 @@ func main() {
 
 	// use mr2 Func --> set model
 	mr2 := &ModelResolver{model: model}
-	solver, err := dag.NewSolver(d, mr2.Table())
+	solver, err := dag.NewSolver(d, mr2)
 	if err != nil {
 		panic(err)
 	}

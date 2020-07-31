@@ -47,7 +47,7 @@ func (m *ModelResolver) GetProfile() error {
 	return nil
 }
 
-func (m *ModelResolver) ResolveTable() SolveFuncTable {
+func (m *ModelResolver) ResolveTable() map[Node]SolveFunc {
 	return map[Node]SolveFunc{
 		FieldId:        func() error { return nil },
 		FieldFirstName: m.GetFirstName,
@@ -55,6 +55,11 @@ func (m *ModelResolver) ResolveTable() SolveFuncTable {
 		FieldFullName:  m.GetFullName,
 		FieldProfile:   m.GetProfile,
 	}
+}
+
+func (m *ModelResolver) GetSolveFunc(node Node) SolveFunc {
+	table := m.ResolveTable()
+	return table[node]
 }
 
 func (m *ModelResolver) ResolveDeps() map[Node][]Node {
@@ -75,7 +80,7 @@ func TestSolverWithModel(t *testing.T) {
 	assert.NotNil(t, dag)
 
 	problem := []Node{FieldProfile}
-	solver, err := NewSolver(dag, mr.ResolveTable())
+	solver, err := NewSolver(dag, mr)
 	assert.Nil(t, err)
 	assert.NotNil(t, solver)
 
@@ -94,9 +99,15 @@ func TestSolve1(t *testing.T) {
 	dag, err := NewDAG(requires)
 	assert.Nil(t, err)
 
-	table := map[Node]SolveFunc{}
-	_, err = NewSolver(dag, table)
-	assert.NotNil(t, err)
+	var solvable Solvable
+	_, err = NewSolver(dag, solvable)
+	assert.Nil(t, err)
+}
+
+type SolveTable map[Node]SolveFunc
+
+func (x SolveTable) GetSolveFunc(node Node) SolveFunc {
+	return x[node]
 }
 
 func TestSolve2(t *testing.T) {
@@ -110,7 +121,7 @@ func TestSolve2(t *testing.T) {
 	dag, err := NewDAG(requires)
 	assert.Nil(t, err)
 
-	table := map[Node]SolveFunc{
+	table := SolveTable{
 		0: func() error { return nil },
 		1: func() error { return nil },
 		2: func() error { return nil },
