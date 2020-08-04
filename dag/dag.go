@@ -4,28 +4,24 @@ import (
 	"errors"
 )
 
-type (
-	Node        int
-	DAGRequires map[Node][]Node
-)
+type Node int
 
 type DAG struct {
 	nodes    []Node
-	requires DAGRequires
+	requires map[Node][]Node
 	topoSort [][]Node
 }
 
 var InvalidDAG = errors.New("invalid DAG")
 
-func NewDAG(requires DAGRequires) (*DAG, error) {
-	// copy
-	requires2 := make(DAGRequires, len(requires))
+func NewDAG(requires map[Node][]Node) (*DAG, error) {
+	requires2 := make(map[Node][]Node, len(requires))
 	for node, rs := range requires {
 		nodes := make([]Node, len(rs))
 		copy(nodes, rs)
 		requires2[node] = nodes
 	}
-	requires = requires2
+	requires = requires2 // copy
 
 	ts, err := topoSort(requires)
 	if err != nil {
@@ -45,7 +41,7 @@ func NewDAG(requires DAGRequires) (*DAG, error) {
 	return dag, nil
 }
 
-func topoSort(requires DAGRequires) ([][]Node, error) {
+func topoSort(requires map[Node][]Node) ([][]Node, error) {
 	// check all nodes has required
 	for _, rs := range requires {
 		for _, r := range rs {
@@ -55,22 +51,22 @@ func topoSort(requires DAGRequires) ([][]Node, error) {
 		}
 	}
 
-	var nodesList [][]Node
-	nodeMap := make(map[Node]int, len(requires))
-	for stage := 0; len(nodeMap) < len(requires); stage++ {
+	var ts [][]Node
+	stageMap := make(map[Node]int, len(requires))
+	for stage := 0; len(stageMap) < len(requires); stage++ {
 		var nodes []Node
-		for node, require := range requires {
-			if _, ok := nodeMap[node]; ok {
+		for node, rs := range requires {
+			if _, ok := stageMap[node]; ok {
 				continue
 			}
-			// fitler
-			var rs []Node
-			for _, r := range require {
-				if _, ok := nodeMap[r]; !ok {
-					rs = append(rs, r)
+
+			var frs []Node
+			for _, r := range rs {
+				if _, ok := stageMap[r]; !ok {
+					frs = append(frs, r)
 				}
 			}
-			if len(rs) == 0 {
+			if len(frs) == 0 {
 				nodes = append(nodes, node)
 			}
 		}
@@ -80,15 +76,15 @@ func topoSort(requires DAGRequires) ([][]Node, error) {
 		}
 
 		for _, node := range nodes {
-			nodeMap[node] = stage
+			stageMap[node] = stage
 		}
-		nodesList = append(nodesList, nodes)
+
+		ts = append(ts, nodes)
 	}
-	return nodesList, nil
+	return ts, nil
 }
 
 func (d *DAG) TopoSort() [][]Node {
-	// return a copy of d.topoSort
 	ts := make([][]Node, len(d.topoSort))
 	for i := range d.topoSort {
 		ts[i] = make([]Node, len(d.topoSort[i]))
@@ -98,7 +94,6 @@ func (d *DAG) TopoSort() [][]Node {
 }
 
 func (d *DAG) Nodes() []Node {
-	// return a copy of d.nodes
 	nodes := make([]Node, len(d.nodes))
 	copy(nodes, d.nodes)
 	return nodes
