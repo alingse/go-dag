@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/alingse/go-dag/dag"
+	dag "github.com/alingse/go-dag"
 )
 
 type UserModel struct {

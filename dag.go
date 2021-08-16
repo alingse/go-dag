@@ -5,25 +5,19 @@ import (
 )
 
 type Node int
+type TopoSort [][]Node
+type Requires map[Node][]Node
 
 type DAG struct {
 	nodes    []Node
-	requires map[Node][]Node
-	topoSort [][]Node
+	requires Requires
+	topoSort TopoSort
 }
 
 var InvalidDAG = errors.New("invalid DAG")
 
-func NewDAG(requires map[Node][]Node) (*DAG, error) {
-	requires2 := make(map[Node][]Node, len(requires))
-	for node, rs := range requires {
-		nodes := make([]Node, len(rs))
-		copy(nodes, rs)
-		requires2[node] = nodes
-	}
-	requires = requires2 // copy
-
-	ts, err := topoSort(requires)
+func NewDAG(requires Requires) (*DAG, error) {
+	ts, err := NewTopoSort(requires)
 	if err != nil {
 		return nil, err
 	}
@@ -35,23 +29,52 @@ func NewDAG(requires map[Node][]Node) (*DAG, error) {
 
 	dag := &DAG{
 		nodes:    nodes,
-		requires: requires,
+		requires: copyRequires(requires),
 		topoSort: ts,
 	}
 	return dag, nil
 }
 
-func topoSort(requires map[Node][]Node) ([][]Node, error) {
-	// check all nodes has required
-	for _, rs := range requires {
-		for _, r := range rs {
-			if _, ok := requires[r]; !ok {
-				return nil, InvalidDAG
+func (d *DAG) TopoSort() [][]Node {
+	return copyTopoSort(d.topoSort)
+}
+
+func (d *DAG) Nodes() []Node {
+	return copyNodes(d.nodes)
+}
+
+func (d *DAG) Solve(problem []Node) TopoSort {
+	needMap := make(map[Node]bool)
+	for len(problem) > 0 {
+		var next []Node
+		for _, node := range problem {
+			needMap[node] = true
+			for _, r := range d.requires[node] {
+				if !needMap[r] {
+					next = append(next, r)
+				}
 			}
 		}
+		problem = next
 	}
 
-	var ts [][]Node
+	var solution TopoSort
+	for _, nodes := range d.topoSort {
+		var rs []Node
+		for _, node := range nodes {
+			if needMap[node] {
+				rs = append(rs, node)
+			}
+		}
+		if len(rs) > 0 {
+			solution = append(solution, rs)
+		}
+	}
+	return solution
+}
+
+func NewTopoSort(requires Requires) (TopoSort, error) {
+	var ts TopoSort
 	stageMap := make(map[Node]int, len(requires))
 	for stage := 0; len(stageMap) < len(requires); stage++ {
 		var nodes []Node
@@ -60,13 +83,13 @@ func topoSort(requires map[Node][]Node) ([][]Node, error) {
 				continue
 			}
 
-			var frs []Node
+			var notReady []Node
 			for _, r := range rs {
 				if _, ok := stageMap[r]; !ok {
-					frs = append(frs, r)
+					notReady = append(notReady, r)
 				}
 			}
-			if len(frs) == 0 {
+			if len(notReady) == 0 {
 				nodes = append(nodes, node)
 			}
 		}
@@ -84,47 +107,29 @@ func topoSort(requires map[Node][]Node) ([][]Node, error) {
 	return ts, nil
 }
 
-func (d *DAG) TopoSort() [][]Node {
-	ts := make([][]Node, len(d.topoSort))
-	for i := range d.topoSort {
-		ts[i] = make([]Node, len(d.topoSort[i]))
-		copy(ts[i], d.topoSort[i])
-	}
-	return ts
-}
-
-func (d *DAG) Nodes() []Node {
-	nodes := make([]Node, len(d.nodes))
-	copy(nodes, d.nodes)
-	return nodes
-}
-
-func (d *DAG) Solve(problem []Node) [][]Node {
-	need := make(map[Node]bool)
-	for len(problem) > 0 {
-		var next []Node
-		for _, node := range problem {
-			need[node] = true
-			for _, r := range d.requires[node] {
-				if !need[r] {
-					next = append(next, r)
-				}
-			}
-		}
-		problem = next
-	}
-
-	var soloution [][]Node
-	for _, nodes := range d.topoSort {
-		var rs []Node
-		for _, node := range nodes {
-			if need[node] {
-				rs = append(rs, node)
-			}
-		}
+func copyRequires(requires Requires) Requires {
+	requires2 := make(Requires, len(requires))
+	for node, rs := range requires {
 		if len(rs) > 0 {
-			soloution = append(soloution, rs)
+			rs2 := make([]Node, len(rs))
+			copy(rs2, rs)
+			requires2[node] = rs2
 		}
 	}
-	return soloution
+	return requires2
+}
+
+func copyTopoSort(ts TopoSort) TopoSort {
+	ts2 := make(TopoSort, len(ts))
+	for i := range ts {
+		ts2[i] = make([]Node, len(ts[i]))
+		copy(ts2[i], ts[i])
+	}
+	return ts2
+}
+
+func copyNodes(nodes []Node) []Node {
+	nodes2 := make([]Node, len(nodes))
+	copy(nodes2, nodes)
+	return nodes2
 }
