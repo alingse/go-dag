@@ -3,7 +3,15 @@ package main
 import (
 	"fmt"
 
-	dag "github.com/alingse/go-dag"
+	"github.com/alingse/go-dag"
+)
+
+const (
+	FieldId dag.Node = iota + 1
+	FieldFirstName
+	FieldLastName
+	FieldFullName
+	FieldProfile
 )
 
 type UserModel struct {
@@ -14,87 +22,67 @@ type UserModel struct {
 	Profile   string
 }
 
-const (
-	FieldId dag.Node = iota + 1
-	FieldFirstName
-	FieldLastName
-	FieldFullName
-	FieldProfile
-)
-
-type ModelResolver struct {
-	model *UserModel
-}
-
-func (m *ModelResolver) ResolveFirstName() error {
-	m.model.FirstName = fmt.Sprintf("hello:%d", m.model.Id)
+func (m *UserModel) GetFirstName() error {
+	m.FirstName = fmt.Sprintf("hello:%d", m.Id)
 	return nil
 }
 
-func (m *ModelResolver) ResolveLastName() error {
-	m.model.LastName = fmt.Sprintf("world:%d", m.model.Id)
+func (m *UserModel) GetLastName() error {
+	m.LastName = fmt.Sprintf("world:%d", m.Id)
 	return nil
 }
 
-func (m *ModelResolver) ResolveFullName() error {
-	m.model.FullName = fmt.Sprintf("%s %s", m.model.FirstName, m.model.LastName)
+func (m *UserModel) GetFullName() error {
+	m.FullName = fmt.Sprintf("%s %s", m.FirstName, m.LastName)
 	return nil
 }
 
-func (m *ModelResolver) ResolveProfile() error {
-	m.model.Profile = fmt.Sprintf("User:%d, with FullName: %s", m.model.Id, m.model.FullName)
+func (m *UserModel) GetProfile() error {
+	m.Profile = fmt.Sprintf("User:%d, with FullName: %s", m.Id, m.FullName)
 	return nil
 }
 
-func (m *ModelResolver) Table() map[dag.Node]dag.SolveFunc {
-	return map[dag.Node]dag.SolveFunc{
-		FieldId:        func() error { return nil },
-		FieldFirstName: m.ResolveFirstName,
-		FieldLastName:  m.ResolveLastName,
-		FieldFullName:  m.ResolveFullName,
-		FieldProfile:   m.ResolveProfile,
+func (m *UserModel) Solve(n dag.Node) error {
+	switch n {
+	case FieldId:
+		return nil
+	case FieldFirstName:
+		return m.GetFirstName()
+	case FieldLastName:
+		return m.GetLastName()
+	case FieldFullName:
+		return m.GetFullName()
+	case FieldProfile:
+		return m.GetProfile()
+	default:
+		return fmt.Errorf("no such node %d", n)
 	}
 }
 
-func (m *ModelResolver) Requires() map[dag.Node][]dag.Node {
-	return map[dag.Node][]dag.Node{
-		FieldId:        nil,
-		FieldFirstName: {FieldId},
-		FieldLastName:  {FieldId},
-		FieldFullName:  {FieldFirstName, FieldLastName},
-		FieldProfile:   {FieldId, FieldFullName},
-	}
-}
-
-func (m *ModelResolver) GetSolveFunc(node dag.Node) dag.SolveFunc {
-	table := m.Table()
-	return table[node]
+var UserModelRequires dag.Requires = map[dag.Node][]dag.Node{
+	FieldId:        nil,
+	FieldFirstName: {FieldId},
+	FieldLastName:  {FieldId},
+	FieldFullName:  {FieldFirstName, FieldLastName},
+	FieldProfile:   {FieldId, FieldFullName},
 }
 
 func main() {
-	// load DAG
-	var mr *ModelResolver
-	d, err := dag.NewDAG(mr.Requires())
+	userDAG, err := dag.NewDAG(UserModelRequires)
 	if err != nil {
 		panic(err)
 	}
 
-	// model && problem
-	model := &UserModel{Id: 1}
-	problem := []dag.Node{FieldProfile}
+	user := &UserModel{Id: 1}
+	userSolver := dag.NewSolver(userDAG, user)
 
-	// use mr2 Func --> set model
-	mr2 := &ModelResolver{model: model}
-	solver, err := dag.NewSolver(d, mr2)
+	// fields
+	fields := []dag.Node{FieldProfile}
+	err = userSolver.Solve(fields)
 	if err != nil {
 		panic(err)
-	}
-
-	errors := solver.Solve(problem)
-	if errors[0] != nil {
-		panic(errors[0])
 	}
 
 	// got the profile: 'User:1, with FullName: hello:1 world:1'
-	fmt.Println(model.Profile)
+	fmt.Println(user.Profile)
 }

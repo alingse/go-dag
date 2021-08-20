@@ -1,16 +1,11 @@
 package dag
 
 import (
-	"errors"
-	"sync"
-)
-
-type (
-	SolveFunc func() error
+	"fmt"
 )
 
 type Solvable interface {
-	GetSolveFunc(n Node) SolveFunc
+	Solve(n Node) error
 }
 
 type Solver struct {
@@ -18,55 +13,33 @@ type Solver struct {
 	solvable Solvable
 }
 
-var InvalidSolver = errors.New("invalid Solver")
+type SolveErr struct {
+	Node
+	Err error
+}
 
-func NewSolver(dag *DAG, solvable Solvable) (*Solver, error) {
-	solver := &Solver{
+func (e SolveErr) Error() string {
+	return fmt.Sprintf("solve node %d got err %s", e.Node, e.Err)
+}
+
+func NewSolver(dag *DAG, solvable Solvable) *Solver {
+	return &Solver{
 		dag:      dag,
 		solvable: solvable,
 	}
-	return solver, nil
 }
 
-func (s *Solver) Solve(problem []Node) []error {
+func (s *Solver) Solve(problem []Node) error {
 	solution := s.dag.Solve(problem)
-	errMap := make(map[Node]error, len(problem))
+	// fail fast
 	for _, nodes := range solution {
-		var wg sync.WaitGroup
-		errors := make([]error, len(nodes))
-		for i, node := range nodes {
-			i := i
+		for _, node := range nodes {
 			node := node
-			f := s.solvable.GetSolveFunc(node)
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				var err error
-				// check if require failed
-				for _, r := range s.dag.requires[node] {
-					if errMap[r] != nil {
-						err = errMap[r]
-						break
-					}
-				}
-
-				if err != nil {
-					errors[i] = err
-					return
-				}
-				errors[i] = f()
-			}()
-		}
-		wg.Wait()
-		// collect
-		for i, err := range errors {
-			errMap[nodes[i]] = err
+			err := s.solvable.Solve(node)
+			if err != nil {
+				return &SolveErr{Node: node, Err: err}
+			}
 		}
 	}
-
-	errors := make([]error, len(problem))
-	for i, node := range problem {
-		errors[i] = errMap[node]
-	}
-	return errors
+	return nil
 }
