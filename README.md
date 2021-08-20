@@ -1,9 +1,16 @@
 # go-dag
-try implement DAG resolver and topological sort
+
+implement DAG with topological sort
+
+and DAG Solve help code
 
 ## DAG
 
 根据依赖关系构建拓扑排序
+
+整个 DAG 依赖按照拓扑排序依次从前到后递进
+
+例子
 
 ```
 0 --> nil
@@ -16,9 +23,19 @@ try implement DAG resolver and topological sort
 得到的拓扑排序就是
 [0] [1, 3] [2] [4]
 
+需要先有 [0] 然后才可以得到 [1, 3], 再得到 [2] 最后才能得到 [4]
+
+一层中的节点没有依赖关系, 下一层只能等到上一层完全就绪才可以。
+
 ### Solve
 
-将传入的 []Node 作为问题 Solve 一种解决方案
+有时, 不需要全部解决 DAG 的每个 Node
+
+给定 []None 作为一个 Problem, 对拓扑排序的结果 TopoSort 进行抽取
+
+得到 TopoSort 结果在该 Problem 下的投影, 就是本次需要的一个解决方案 (Solution)。
+
+比如
 
 ```
 [3] --> [0] [3]
@@ -28,11 +45,23 @@ try implement DAG resolver and topological sort
 [2, 4] --> [0] [1, 3] [2] [4]
 ```
 
-solve 数组决定依赖解决顺序, solve 第 i 项可并发处理
+Problem [3] 的解决方案是 [0], [3] 只需要依次处理 0, 3 节点即可
+
+Problem [2, 4] 的解决方案是 [0] [1, 3] [2] [4]
+
+solution 的数组决定解决顺序, 每一层内部可以并行处理。
 
 ## Solver
 
-根据构建好的 DAG 和 SolveFuncTable 去执行 problem 的求解过程
+定义 `Solvable` 作为一个实际可解决的问题
+
+```go
+type Solvable interface {
+	Solve(n Node) error
+}
+```
+
+根据构建好的 DAG 和 Solvable 去执行 problem 的求解过程
 
 如 examples 给出的例子
 
@@ -42,7 +71,15 @@ package main
 import (
 	"fmt"
 
-	"github.com/alingse/go-dag/dag"
+	"github.com/alingse/go-dag"
+)
+
+const (
+	FieldId dag.Node = iota + 1
+	FieldFirstName
+	FieldLastName
+	FieldFullName
+	FieldProfile
 )
 
 type UserModel struct {
@@ -53,97 +90,91 @@ type UserModel struct {
 	Profile   string
 }
 
-const (
-	FieldId dag.Node = iota + 1
-	FieldFirstName
-	FieldLastName
-	FieldFullName
-	FieldProfile
-)
-
-type ModelResolver struct {
-	model *UserModel
-}
-
-func (m *ModelResolver) ResolveFirstName() error {
-	m.model.FirstName = fmt.Sprintf("hello:%d", m.model.Id)
+func (m *UserModel) GetFirstName() error {
+	m.FirstName = fmt.Sprintf("hello:%d", m.Id)
 	return nil
 }
 
-func (m *ModelResolver) ResolveLastName() error {
-	m.model.LastName = fmt.Sprintf("world:%d", m.model.Id)
+func (m *UserModel) GetLastName() error {
+	m.LastName = fmt.Sprintf("world:%d", m.Id)
 	return nil
 }
 
-func (m *ModelResolver) ResolveFullName() error {
-	m.model.FullName = fmt.Sprintf("%s %s", m.model.FirstName, m.model.LastName)
+func (m *UserModel) GetFullName() error {
+	m.FullName = fmt.Sprintf("%s %s", m.FirstName, m.LastName)
 	return nil
 }
 
-func (m *ModelResolver) ResolveProfile() error {
-	m.model.Profile = fmt.Sprintf("User:%d, with FullName: %s", m.model.Id, m.model.FullName)
+func (m *UserModel) GetProfile() error {
+	m.Profile = fmt.Sprintf("User:%d, with FullName: %s", m.Id, m.FullName)
 	return nil
 }
 
-func (m *ModelResolver) Table() dag.SolveFuncTable {
-	return map[dag.Node]dag.SolveFunc{
-		FieldId:        func() error { return nil },
-		FieldFirstName: m.ResolveFirstName,
-		FieldLastName:  m.ResolveLastName,
-		FieldFullName:  m.ResolveFullName,
-		FieldProfile:   m.ResolveProfile,
+func (m *UserModel) Solve(n dag.Node) error {
+	switch n {
+	case FieldId:
+		return nil
+	case FieldFirstName:
+		return m.GetFirstName()
+	case FieldLastName:
+		return m.GetLastName()
+	case FieldFullName:
+		return m.GetFullName()
+	case FieldProfile:
+		return m.GetProfile()
+	default:
+		return fmt.Errorf("no such node %d", n)
 	}
 }
 
-func (m *ModelResolver) Requires() dag.DAGRequires {
-	return map[dag.Node][]dag.Node{
-		FieldId:        nil,
-		FieldFirstName: {FieldId},
-		FieldLastName:  {FieldId},
-		FieldFullName:  {FieldFirstName, FieldLastName},
-		FieldProfile:   {FieldId, FieldFullName},
-	}
+var UserModelRequires dag.Requires = map[dag.Node][]dag.Node{
+	FieldId:        nil,
+	FieldFirstName: {FieldId},
+	FieldLastName:  {FieldId},
+	FieldFullName:  {FieldFirstName, FieldLastName},
+	FieldProfile:   {FieldId, FieldFullName},
 }
 
 func main() {
-	// load DAG
-	var mr *ModelResolver
-	d, err := dag.NewDAG(mr.Requires())
+	userDAG, err := dag.NewDAG(UserModelRequires)
 	if err != nil {
 		panic(err)
 	}
 
-	// model && problem
-	model := &UserModel{Id: 1}
-	problem := []dag.Node{FieldProfile}
+	user := &UserModel{Id: 1}
+	userSolver := dag.NewSolver(userDAG, user)
 
-	// use mr2 Func --> set model
-	mr2 := &ModelResolver{model: model}
-	solver, err := dag.NewSolver(d, mr2.Table())
+	// fields
+	fields := []dag.Node{FieldProfile}
+	err = userSolver.Solve(fields)
 	if err != nil {
 		panic(err)
-	}
-
-	errors := solver.Solve(problem)
-	if errors[0] != nil {
-		panic(errors[0])
 	}
 
 	// got the profile: 'User:1, with FullName: hello:1 world:1'
-	fmt.Println(model.Profile)
+	fmt.Println(user.Profile)
 }
 ```
 
-依次声明 `Model` 和 `Field` 以及各个字段的具体 `ResolveXXX` 实现
+依次声明 `UserModel` 的各个字段 `Field` 的 Func, 并实现 Solvable 接口
 
-ModelResolver 给出 `Requires()` 和 `Table()`
 
-给出具体要处理的 problem --> `[]{FieldProfile}`
+```go
+user := &UserModel{Id: 1}
+userSolver := dag.NewSolver(userDAG, user)
 
-solver 将自动 Solve
+fields := []dag.Node{FieldProfile}
+err = userSolver.Solve(fields)
+```
 
-### Solve
+根据声明的 UserDAG 和 UserModel 构建 solver 加上传入 fields[FieldProfile]
 
-目前 Solver.Solve 函数是尽力执行完所有可能执行的。
+最后就能自动 Solve 得到 UserModel.Profile 字段
 
-也许可以提供碰见任意 err 就停止的 Solve (failfast?), 不过这种情况 err 通过依赖路径一路 pop, 最终返回 problem 对应的 err 优点的难度
+### SolveType
+
+目前的 Solve 是 failfast
+
+也许每一层里面可以尽力执行, 或者将 Solveable 作为多 node 的 `Solve(nodes []Node) error`
+
+这样具体是并发、fail fast、try all 都有使用者决定
