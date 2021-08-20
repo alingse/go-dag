@@ -1,15 +1,10 @@
 package dag
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
-)
 
-func assertEqual(t *testing.T, a interface{}, b interface{}) {
-	if a != b {
-		t.Fatalf("%s != %s", a, b)
-	}
-}
+	"github.com/stretchr/testify/assert"
+)
 
 func TestDAG(t *testing.T) {
 	requires := map[Node][]Node{
