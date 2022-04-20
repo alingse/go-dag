@@ -4,19 +4,15 @@ import (
 	"errors"
 )
 
-type Node int
-type TopoSort [][]Node
-type Requires map[Node][]Node
-
-type DAG struct {
+type DAG[Node comparable] struct {
 	nodes    []Node
-	requires Requires
-	topoSort TopoSort
+	requires map[Node][]Node
+	topoSort [][]Node
 }
 
 var InvalidDAG = errors.New("invalid DAG")
 
-func NewDAG(requires Requires) (*DAG, error) {
+func NewDAG[Node comparable](requires map[Node][]Node) (*DAG[Node], error) {
 	ts, err := NewTopoSort(requires)
 	if err != nil {
 		return nil, err
@@ -27,7 +23,7 @@ func NewDAG(requires Requires) (*DAG, error) {
 		nodes = append(nodes, ts[i]...)
 	}
 
-	dag := &DAG{
+	dag := &DAG[Node]{
 		nodes:    nodes,
 		requires: copyRequires(requires),
 		topoSort: ts,
@@ -35,15 +31,15 @@ func NewDAG(requires Requires) (*DAG, error) {
 	return dag, nil
 }
 
-func (d *DAG) TopoSort() [][]Node {
+func (d *DAG[Node]) TopoSort() [][]Node {
 	return copyTopoSort(d.topoSort)
 }
 
-func (d *DAG) Nodes() []Node {
+func (d *DAG[Node]) Nodes() []Node {
 	return copyNodes(d.nodes)
 }
 
-func (d *DAG) Solve(problem []Node) TopoSort {
+func (d *DAG[Node]) Solve(problem []Node) [][]Node {
 	needMap := make(map[Node]bool)
 	for len(problem) > 0 {
 		var next []Node
@@ -58,7 +54,7 @@ func (d *DAG) Solve(problem []Node) TopoSort {
 		problem = next
 	}
 
-	var solution TopoSort
+	var solution [][]Node
 	for _, nodes := range d.topoSort {
 		var rs []Node
 		for _, node := range nodes {
@@ -73,8 +69,8 @@ func (d *DAG) Solve(problem []Node) TopoSort {
 	return solution
 }
 
-func NewTopoSort(requires Requires) (TopoSort, error) {
-	var ts TopoSort
+func NewTopoSort[Node comparable](requires map[Node][]Node) ([][]Node, error) {
+	var ts [][]Node
 	stageMap := make(map[Node]int, len(requires))
 	for stage := 0; len(stageMap) < len(requires); stage++ {
 		var nodes []Node
@@ -107,8 +103,8 @@ func NewTopoSort(requires Requires) (TopoSort, error) {
 	return ts, nil
 }
 
-func copyRequires(requires Requires) Requires {
-	requires2 := make(Requires, len(requires))
+func copyRequires[Node comparable](requires map[Node][]Node) map[Node][]Node {
+	requires2 := make(map[Node][]Node, len(requires))
 	for node, rs := range requires {
 		if len(rs) > 0 {
 			rs2 := make([]Node, len(rs))
@@ -119,8 +115,8 @@ func copyRequires(requires Requires) Requires {
 	return requires2
 }
 
-func copyTopoSort(ts TopoSort) TopoSort {
-	ts2 := make(TopoSort, len(ts))
+func copyTopoSort[Node comparable](ts [][]Node) [][]Node {
+	ts2 := make([][]Node, len(ts))
 	for i := range ts {
 		ts2[i] = make([]Node, len(ts[i]))
 		copy(ts2[i], ts[i])
@@ -128,7 +124,7 @@ func copyTopoSort(ts TopoSort) TopoSort {
 	return ts2
 }
 
-func copyNodes(nodes []Node) []Node {
+func copyNodes[Node comparable](nodes []Node) []Node {
 	nodes2 := make([]Node, len(nodes))
 	copy(nodes2, nodes)
 	return nodes2

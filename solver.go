@@ -4,32 +4,32 @@ import (
 	"fmt"
 )
 
-type Solvable interface {
+type Solvable[Node comparable] interface {
 	Solve(n Node) error
 }
 
-type Solver struct {
-	dag      *DAG
-	solvable Solvable
+type Solver[Node comparable] struct {
+	dag      *DAG[Node]
+	solvable Solvable[Node]
 }
 
-type SolveErr struct {
-	Node
-	Err error
+type SolveErr[Node comparable] struct {
+	Value Node
+	Err   error
 }
 
-func (e SolveErr) Error() string {
-	return fmt.Sprintf("solve node %d got err %s", e.Node, e.Err)
+func (e SolveErr[Node]) Error() string {
+	return fmt.Sprintf("solve node %v got err %s", e.Value, e.Err)
 }
 
-func NewSolver(dag *DAG, solvable Solvable) *Solver {
-	return &Solver{
+func NewSolver[Node comparable](dag *DAG[Node], solvable Solvable[Node]) *Solver[Node] {
+	return &Solver[Node]{
 		dag:      dag,
 		solvable: solvable,
 	}
 }
 
-func (s *Solver) Solve(problem []Node) error {
+func (s *Solver[Node]) Solve(problem []Node) error {
 	solution := s.dag.Solve(problem)
 	// fail fast
 	for _, nodes := range solution {
@@ -37,7 +37,7 @@ func (s *Solver) Solve(problem []Node) error {
 			node := node
 			err := s.solvable.Solve(node)
 			if err != nil {
-				return &SolveErr{Node: node, Err: err}
+				return &SolveErr[Node]{Value: node, Err: err}
 			}
 		}
 	}
