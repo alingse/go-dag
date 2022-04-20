@@ -3,8 +3,6 @@ package dag
 import (
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -70,15 +68,15 @@ var UserModelRequires Requires = map[Node][]Node{
 
 func TestSolverWithModel(t *testing.T) {
 	dag, err := NewDAG(UserModelRequires)
-	assert.Nil(t, err)
-	assert.NotNil(t, dag)
+	assertNil(t, err)
+	assertNotNil(t, dag)
 
 	user := &UserModel{Id: 1}
 	solver := NewSolver(dag, user)
 
 	fields := []Node{FieldProfile}
 	err2 := solver.Solve(fields)
-	assert.Nil(t, err2)
+	assertNil(t, err2)
 
-	assert.Equal(t, "User:1, with FullName: hello:1 world:1", user.Profile)
+	assertEqual(t, "User:1, with FullName: hello:1 world:1", user.Profile)
 }
