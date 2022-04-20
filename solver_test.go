@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	FieldId Node = iota + 1
+	FieldId int = iota + 1
 	FieldFirstName
 	FieldLastName
 	FieldFullName
@@ -41,7 +41,7 @@ func (m *UserModel) GetProfile() error {
 	return nil
 }
 
-func (m *UserModel) Solve(n Node) error {
+func (m *UserModel) Solve(n int) error {
 	switch n {
 	case FieldId:
 		return nil
@@ -58,7 +58,7 @@ func (m *UserModel) Solve(n Node) error {
 	}
 }
 
-var UserModelRequires Requires = map[Node][]Node{
+var UserModelRequires = map[int][]int{
 	FieldId:        nil,
 	FieldFirstName: {FieldId},
 	FieldLastName:  {FieldId},
@@ -72,9 +72,9 @@ func TestSolverWithModel(t *testing.T) {
 	assertNotNil(t, dag)
 
 	user := &UserModel{Id: 1}
-	solver := NewSolver(dag, user)
+	solver := NewSolver[int](dag, user)
 
-	fields := []Node{FieldProfile}
+	fields := []int{FieldProfile}
 	err2 := solver.Solve(fields)
 	assertNil(t, err2)
 

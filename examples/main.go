@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	FieldId dag.Node = iota + 1
+	FieldId int = iota + 1
 	FieldFirstName
 	FieldLastName
 	FieldFullName
@@ -42,7 +42,7 @@ func (m *UserModel) GetProfile() error {
 	return nil
 }
 
-func (m *UserModel) Solve(n dag.Node) error {
+func (m *UserModel) Solve(n int) error {
 	switch n {
 	case FieldId:
 		return nil
@@ -59,7 +59,7 @@ func (m *UserModel) Solve(n dag.Node) error {
 	}
 }
 
-var UserModelRequires dag.Requires = map[dag.Node][]dag.Node{
+var UserModelRequires = map[int][]int{
 	FieldId:        nil,
 	FieldFirstName: {FieldId},
 	FieldLastName:  {FieldId},
@@ -74,10 +74,10 @@ func main() {
 	}
 
 	user := &UserModel{Id: 1}
-	userSolver := dag.NewSolver(userDAG, user)
+	userSolver := dag.NewSolver[int](userDAG, user)
 
 	// fields
-	fields := []dag.Node{FieldProfile}
+	fields := []int{FieldProfile}
 	err = userSolver.Solve(fields)
 	if err != nil {
 		panic(err)
