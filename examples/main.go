@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	FieldId int = iota + 1
-	FieldFirstName
-	FieldLastName
-	FieldFullName
-	FieldProfile
+	FieldId        = "id"
+	FieldFirstName = "first_name"
+	FieldLastName  = "last_name"
+	FieldFullName  = "full_name"
+	FieldProfile   = "profile"
 )
 
 type UserModel struct {
@@ -23,12 +23,12 @@ type UserModel struct {
 }
 
 func (m *UserModel) GetFirstName() error {
-	m.FirstName = fmt.Sprintf("hello:%d", m.Id)
+	m.FirstName = fmt.Sprintf("firstName%d", m.Id)
 	return nil
 }
 
 func (m *UserModel) GetLastName() error {
-	m.LastName = fmt.Sprintf("world:%d", m.Id)
+	m.LastName = fmt.Sprintf("lastName%d", m.Id)
 	return nil
 }
 
@@ -38,11 +38,11 @@ func (m *UserModel) GetFullName() error {
 }
 
 func (m *UserModel) GetProfile() error {
-	m.Profile = fmt.Sprintf("User:%d, with FullName: %s", m.Id, m.FullName)
+	m.Profile = fmt.Sprintf("I'm User %d, my FullName is「%s」", m.Id, m.FullName)
 	return nil
 }
 
-func (m *UserModel) Solve(n int) error {
+func (m *UserModel) Solve(n string) error {
 	switch n {
 	case FieldId:
 		return nil
@@ -55,11 +55,11 @@ func (m *UserModel) Solve(n int) error {
 	case FieldProfile:
 		return m.GetProfile()
 	default:
-		return fmt.Errorf("no such node %d", n)
+		return fmt.Errorf("no such node %v", n)
 	}
 }
 
-var UserModelRequires = map[int][]int{
+var filedRequires = map[string][]string{
 	FieldId:        nil,
 	FieldFirstName: {FieldId},
 	FieldLastName:  {FieldId},
@@ -68,21 +68,20 @@ var UserModelRequires = map[int][]int{
 }
 
 func main() {
-	userDAG, err := dag.NewDAG(UserModelRequires)
+	userDAG, err := dag.NewDAG(filedRequires)
 	if err != nil {
 		panic(err)
 	}
 
 	user := &UserModel{Id: 1}
-	userSolver := dag.NewSolver[int](userDAG, user)
+	userSolver := dag.NewSolver[string](userDAG, user)
 
-	// fields
-	fields := []int{FieldProfile}
+	fields := []string{FieldProfile}
 	err = userSolver.Solve(fields)
 	if err != nil {
 		panic(err)
 	}
 
-	// got the profile: 'User:1, with FullName: hello:1 world:1'
+	// I'm User 1, my FullName is「firstName1 lastName1」
 	fmt.Println(user.Profile)
 }
