@@ -1,12 +1,14 @@
 # go-dag
 
-go DAG with topological sort, and subgraph problem Solver (with some child nodes)
+this repo is impelement DAG with topological sort
+
+and add a subgraph problem Solver
 
 ## DAG
 
 we use node dependencies to represent a DAG
 
-and build a topological-sorted nodes based on the node dependencies.
+build a topological-sorted nodes list based on the node dependencies.
 
 example, the node dependencies is like this,
 ```
@@ -16,7 +18,7 @@ example, the node dependencies is like this,
 3 --> 0
 4 --> 2, 3
 ```
-and the topological sort nodes like this,
+and the topological sort nodes list is like this,
 
 ```
 [0]
@@ -25,11 +27,9 @@ and the topological sort nodes like this,
 [4]
 ```
 
-### Solve
+this can solve the subgraph problem
 
-and this DAG can solve the subgraph problem
-
-like
+like this.
 
 the problem `[3]` --> got solution `[[0], [3]]`
 
@@ -43,24 +43,16 @@ the problem `[4]` --> got solution `[[0], [1, 3], [2], [4]]`
 [2, 4] --> [0] [1, 3] [2] [4]
 ```
 
-有时, 不需要全部解决 DAG 的每个 Node
+## Solver
 
-给定 []None 作为一个 Problem, 对拓扑排序的结果 TopoSort 进行抽取
+`DAG(nodes) ----> TopoSort [][]Node --> problem: []Node --> solution [][]Node `
 
-得到 TopoSort 结果在该 Problem 下的投影, 就是本次需要的一个解决方案 (Solution)。
+`Solution` is the projection (subgraph) of the TopoSort result under the Problem
 
-比如
-
-
-Problem [3] 的解决方案是 [0], [3] 只需要依次处理 0, 3 节点即可
-
-Problem [2, 4] 的解决方案是 [0] [1, 3] [2] [4]
-
-solution 的数组决定解决顺序, 每一层内部可以并行处理。
 
 ## Solver
 
-定义 `Solvable` 作为一个实际可解决的问题
+impelement `Solvable`
 
 ```go
 type Solvable interface {
@@ -68,9 +60,7 @@ type Solvable interface {
 }
 ```
 
-根据构建好的 DAG 和 Solvable 去执行 problem 的求解过程
-
-如 examples 给出的例子
+### example
 
 ```go
 package main
@@ -134,7 +124,7 @@ func (m *UserModel) Solve(n string) error {
 	}
 }
 
-var filedRequires = map[string][]string{
+var fieldDeps = map[string][]string{
 	FieldId:        nil,
 	FieldFirstName: {FieldId},
 	FieldLastName:  {FieldId},
@@ -143,7 +133,7 @@ var filedRequires = map[string][]string{
 }
 
 func main() {
-	userDAG, err := dag.NewDAG(filedRequires)
+	userDAG, err := dag.NewDAG(fieldDeps)
 	if err != nil {
 		panic(err)
 	}
@@ -152,31 +142,23 @@ func main() {
 	userSolver := dag.NewSolver[string](userDAG, user)
 
 	fields := []string{FieldProfile}
-	err = userSolver.Solve(fields)
-	if err != nil {
-		panic(err)
-	}
-
+	_ = userSolver.Solve(fields)
 	// I'm User 1, my FullName is「firstName1 lastName1」
 	fmt.Println(user.Profile)
 }
 ```
 
-依次声明 `UserModel` 的各个字段 `Field` 的 Resolve Func, 并实现 Solvable 接口 `Solve`
-
-根据声明的 UserDAG 和 UserModel 构建 solver 加上传入 fields[FieldProfile]
-最后就能自动 Solve 得到 UserModel.Profile 字段
-
+so, `userSolver` can auto solve the `UserModel` with the input `fields`
 
 ```go
 user := &UserModel{Id: 1}
-userSolver := dag.NewSolver(userDAG, user)
+userSolver := dag.NewSolver[string](userDAG, user)
 
-fields := []dag.Node{FieldProfile}
-err = userSolver.Solve(fields)
+fields := []string{FieldProfile}
+_ = userSolver.Solve(fields)
 ```
 
-### SolveType
+# TODO
 
 目前的 Solve 是 failfast
 
